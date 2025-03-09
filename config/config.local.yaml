@@ -1,8 +1,8 @@
 database:
   host: localhost
   port: 3306
-  user: {{ vault.user }} # change to your db username
-  password: {{ vault.password }} # change to your db password
+  user: root
+  password: root
   name: mini-url-shortener
 
 server:

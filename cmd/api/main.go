@@ -5,8 +5,11 @@ import (
 	"log"
 	"mini-url-shortener/config"
 	"mini-url-shortener/internal/database"
+	"mini-url-shortener/internal/handlers"
+	"mini-url-shortener/internal/repositories"
 	"mini-url-shortener/internal/routes"
 	"mini-url-shortener/internal/server"
+	"mini-url-shortener/internal/services"
 )
 
 func main() {
@@ -30,11 +33,13 @@ func main() {
 		log.Fatalf("Error initializing database: %v", err)
 	}
 
-	fmt.Println(db)
-	// TODO: setup services, handlers, and server
+	// initialize repository, service, handler
+	urlRepo := repositories.NewURLRepository(db)
+	urlService := services.NewURLService(urlRepo)
+	urlHandler := handlers.NewURLHandler(urlService)
 
 	// setup routes
-	routes := routes.SetupRoutes()
+	routes := routes.SetupRoutes(urlHandler)
 
 	// start server
 	serverPort := cfg.Server.Port

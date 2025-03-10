@@ -1,8 +1,11 @@
 package routes
 
-import "net/http"
+import (
+	"mini-url-shortener/internal/handlers"
+	"net/http"
+)
 
-func SetupRoutes() *http.ServeMux {
+func SetupRoutes(urlHandler *handlers.URLHandler) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /ping", func(w http.ResponseWriter, r *http.Request) {

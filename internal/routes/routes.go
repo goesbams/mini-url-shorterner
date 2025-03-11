@@ -12,6 +12,7 @@ func SetupRoutes(urlHandler *handlers.URLHandler) *http.ServeMux {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("pong"))
 	})
+	mux.HandleFunc("POST /shorten", urlHandler.ShortenURL)
 
 	return mux
 }

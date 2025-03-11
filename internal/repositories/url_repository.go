@@ -67,8 +67,8 @@ func (r *urlRepository) Rollback() error {
 }
 
 func (r *urlRepository) CreateShortCode(ctx context.Context, url *models.URL) error {
-	query := "INSERT INTO shorten_urls (original_url, short_code) VALUES (:original_url, :short_code)"
-	_, err := r.dbExec.ExecContext(ctx, query, sql.Named("original_url", url.OriginalURL), sql.Named("short_code", url.ShortCode))
+	query := "INSERT INTO shorten_urls (original_url, short_code) VALUES (?, ?)"
+	_, err := r.dbExec.ExecContext(ctx, query, url.OriginalURL, url.ShortCode)
 	if err != nil {
 		return fmt.Errorf("failed to create short code: %w", err)
 	}

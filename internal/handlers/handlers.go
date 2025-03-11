@@ -29,7 +29,7 @@ func (h *URLHandler) ShortenURL(w http.ResponseWriter, r *http.Request) {
 	shortURL, err := h.urlService.ShortenURL(r.Context(), request.OriginalURL)
 	if err != nil {
 		log.Println("error shortening url", err)
-		http.Error(w, "failed to shorten url", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 
 		return
 	}

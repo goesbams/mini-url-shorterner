@@ -23,7 +23,7 @@ func TestCreateShortCode_Success(t *testing.T) {
 
 	url := &models.URL{OriginalURL: "https://test.test", ShortCode: "abc123"}
 
-	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO shorten_urls (original_url, short_code) VALUES (:original_url, :short_code)")).
+	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO shorten_urls (original_url, short_code) VALUES (?, ?)")).
 		WithArgs(url.OriginalURL, url.ShortCode).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
@@ -43,7 +43,7 @@ func TestCreateShortCode_Duplicate(t *testing.T) {
 
 	url := &models.URL{OriginalURL: "https://test.test", ShortCode: "dupl1c4t3"}
 
-	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO shorten_urls (original_url, short_code) VALUES (:original_url, :short_code)")).
+	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO shorten_urls (original_url, short_code) VALUES (?, ?)")).
 		WithArgs(url.OriginalURL, url.ShortCode).
 		WillReturnError(fmt.Errorf("duplicate key value violates unique constraint"))
 

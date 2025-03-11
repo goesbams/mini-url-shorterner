@@ -1,3 +1,7 @@
 package services
 
-type URLService interface{}
+import "context"
+
+type URLService interface {
+	ShortenURL(ctx context.Context, originalURL string) (string, error)
+}

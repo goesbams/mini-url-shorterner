@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"mini-url-shortener/internal/models"
 )
@@ -73,5 +74,37 @@ func (r *urlRepository) CreateShortCode(ctx context.Context, url *models.URL) er
 		return fmt.Errorf("failed to create short code: %w", err)
 	}
 
+	return nil
+}
+
+func (r *urlRepository) FindByShortCode(ctx context.Context, shortenCode string) (*models.URL, error) {
+	var url models.URL
+
+	err := r.dbExec.QueryRowContext(ctx, "SELECT id, original_url FROM shorten_urls WHERE short_code = ?", shortenCode).
+		Scan(&url.ID, &url.OriginalURL)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("short code '%s' not found", shortenCode)
+		}
+		return nil, fmt.Errorf("database query failed: %w", err)
+	}
+
+	return &url, nil
+}
+
+func (r *urlRepository) UpdateClickByID(ctx context.Context, id int) error {
+	res, err := r.dbExec.ExecContext(ctx, "UPDATE shorten_urls SET clicks = clicks + 1 WHERE id = ?", id)
+	if err != nil {
+		return fmt.Errorf("failed to update click count: %v", err)
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %v", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("no row updated")
+	}
 	return nil
 }

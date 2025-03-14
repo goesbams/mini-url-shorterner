@@ -11,6 +11,8 @@ type URLRepository interface {
 	Commit() error
 	Rollback() error
 	CreateShortCode(ctx context.Context, url *models.URL) error
+	FindByShortCode(ctx context.Context, shortenCode string) (*models.URL, error)
+	UpdateClickByID(ctx context.Context, id int) error
 }
 
 type dbExecutor interface {

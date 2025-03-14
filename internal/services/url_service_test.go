@@ -34,6 +34,22 @@ func (m *MockURLRepository) CreateShortCode(ctx context.Context, url *models.URL
 	return args.Error(0)
 }
 
+func (m *MockURLRepository) FindByShortCode(ctx context.Context, shortCode string) (url *models.URL, err error) {
+	args := m.Called(ctx, shortCode)
+
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+
+	return args.Get(0).(*models.URL), args.Error(1)
+}
+
+func (m *MockURLRepository) UpdateClickByID(ctx context.Context, id int) error {
+	args := m.Called(ctx, id)
+
+	return args.Error(0)
+}
+
 func TestShortenURL_Success(t *testing.T) {
 	mockRepo := new(MockURLRepository)
 	service := NewURLService(mockRepo)

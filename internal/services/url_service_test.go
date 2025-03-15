@@ -50,9 +50,15 @@ func (m *MockURLRepository) UpdateClickByID(ctx context.Context, id int) error {
 	return args.Error(0)
 }
 
-func TestShortenURL_Success(t *testing.T) {
+func setupMockService() (*MockURLRepository, URLService) {
 	mockRepo := new(MockURLRepository)
 	service := NewURLService(mockRepo)
+
+	return mockRepo, service
+}
+
+func TestShortenURL_Success(t *testing.T) {
+	mockRepo, service := setupMockService()
 
 	url := &models.URL{
 		OriginalURL: "https://test.test",
@@ -70,8 +76,7 @@ func TestShortenURL_Success(t *testing.T) {
 }
 
 func TestShortenURL_EmptyURL(t *testing.T) {
-	mockRepo := new(MockURLRepository)
-	service := NewURLService(mockRepo)
+	mockRepo, service := setupMockService()
 
 	_, err := service.ShortenURL(context.Background(), "")
 	assert.Error(t, err)
@@ -80,8 +85,7 @@ func TestShortenURL_EmptyURL(t *testing.T) {
 }
 
 func TestShortenURL_RepositoryError(t *testing.T) {
-	mockRepo := new(MockURLRepository)
-	service := NewURLService(mockRepo)
+	mockRepo, service := setupMockService()
 
 	url := &models.URL{
 		OriginalURL: "https://test.test",
@@ -95,5 +99,66 @@ func TestShortenURL_RepositoryError(t *testing.T) {
 
 	assert.Empty(t, shortCode)
 	assert.Equal(t, "error creating shorten url: database error", err.Error())
+	mockRepo.AssertExpectations(t)
+}
+
+func TestRedirectURL_Success(t *testing.T) {
+	mockRepo, service := setupMockService()
+	ctx := context.Background()
+
+	url := &models.URL{
+		ID:          1,
+		OriginalURL: "https://test.test",
+		ShortCode:   "abc123",
+	}
+
+	mockRepo.On("Begin", ctx).Return(nil)
+	mockRepo.On("FindByShortCode", ctx, url.ShortCode).Return(url, nil)
+	mockRepo.On("UpdateClickByID", ctx, url.ID).Return(nil)
+	mockRepo.On("Commit").Return(nil)
+
+	originalURL, err := service.RedirectURL(ctx, url.ShortCode)
+	assert.NoError(t, err)
+
+	assert.Equal(t, url.OriginalURL, originalURL)
+	assert.NotEmpty(t, originalURL)
+	mockRepo.AssertExpectations(t)
+}
+
+func TestRedirectURL_EmptyShortCode(t *testing.T) {
+	mockRepo, service := setupMockService()
+	ctx := context.Background()
+
+	mockRepo.On("Begin", ctx).Return(nil)
+	mockRepo.On("FindByShortCode", ctx, "").Return(nil, errors.New("not found"))
+	mockRepo.On("Rollback").Return(nil)
+
+	originalURL, err := service.RedirectURL(context.Background(), "")
+	assert.Error(t, err)
+
+	assert.Empty(t, originalURL)
+	assert.Contains(t, err.Error(), "failed to find URL: not found")
+	mockRepo.AssertExpectations(t)
+}
+
+func TestRedirectURL_UpdateClickFail(t *testing.T) {
+	mockRepo, service := setupMockService()
+	ctx := context.Background()
+
+	url := &models.URL{
+		ID:        1,
+		ShortCode: "abc123",
+	}
+
+	mockRepo.On("Begin", ctx).Return(nil)
+	mockRepo.On("FindByShortCode", ctx, url.ShortCode).Return(url, nil)
+	mockRepo.On("UpdateClickByID", ctx, url.ID).Return(errors.New("failed to update click count"))
+	mockRepo.On("Rollback").Return(nil)
+
+	originalURL, err := service.RedirectURL(ctx, url.ShortCode)
+	assert.Error(t, err)
+
+	assert.Empty(t, originalURL)
+	assert.Contains(t, err.Error(), "failed to update click count")
 	mockRepo.AssertExpectations(t)
 }

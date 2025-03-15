@@ -33,3 +33,27 @@ func (s *urlService) ShortenURL(ctx context.Context, originalURL string) (string
 
 	return url.ShortCode, nil
 }
+
+func (s *urlService) RedirectURL(ctx context.Context, shortCode string) (string, error) {
+	if err := s.urlRepo.Begin(ctx); err != nil {
+		return "", fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
+	url, err := s.urlRepo.FindByShortCode(ctx, shortCode)
+	if err != nil {
+		s.urlRepo.Rollback()
+		return "", fmt.Errorf("failed to find URL: %v", err)
+	}
+
+	if err := s.urlRepo.UpdateClickByID(ctx, url.ID); err != nil {
+		s.urlRepo.Rollback()
+		return "", fmt.Errorf("failed to update click count: %v", err)
+	}
+
+	if err := s.urlRepo.Commit(); err != nil {
+		s.urlRepo.Rollback()
+		return "", fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return url.OriginalURL, nil
+}

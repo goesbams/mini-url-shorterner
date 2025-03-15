@@ -38,3 +38,17 @@ func (h *URLHandler) ShortenURL(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
+
+func (h *URLHandler) Redirect(w http.ResponseWriter, r *http.Request) {
+	shortCode := r.PathValue("shortcode")
+
+	originalURL, err := h.urlService.RedirectURL(r.Context(), shortCode)
+	if err != nil {
+		log.Println("error redirecting to url", err)
+		http.Error(w, err.Error(), http.StatusNotFound)
+
+		return
+	}
+
+	http.Redirect(w, r, originalURL, http.StatusMovedPermanently)
+}

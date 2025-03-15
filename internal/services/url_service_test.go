@@ -50,7 +50,7 @@ func (m *MockURLRepository) UpdateClickByID(ctx context.Context, id int) error {
 	return args.Error(0)
 }
 
-func setupMockService() (*MockURLRepository, URLService) {
+func setupMockRepository() (*MockURLRepository, URLService) {
 	mockRepo := new(MockURLRepository)
 	service := NewURLService(mockRepo)
 
@@ -58,7 +58,7 @@ func setupMockService() (*MockURLRepository, URLService) {
 }
 
 func TestShortenURL_Success(t *testing.T) {
-	mockRepo, service := setupMockService()
+	mockRepo, service := setupMockRepository()
 
 	url := &models.URL{
 		OriginalURL: "https://test.test",
@@ -76,7 +76,7 @@ func TestShortenURL_Success(t *testing.T) {
 }
 
 func TestShortenURL_EmptyURL(t *testing.T) {
-	mockRepo, service := setupMockService()
+	mockRepo, service := setupMockRepository()
 
 	_, err := service.ShortenURL(context.Background(), "")
 	assert.Error(t, err)
@@ -85,7 +85,7 @@ func TestShortenURL_EmptyURL(t *testing.T) {
 }
 
 func TestShortenURL_RepositoryError(t *testing.T) {
-	mockRepo, service := setupMockService()
+	mockRepo, service := setupMockRepository()
 
 	url := &models.URL{
 		OriginalURL: "https://test.test",
@@ -103,7 +103,7 @@ func TestShortenURL_RepositoryError(t *testing.T) {
 }
 
 func TestRedirectURL_Success(t *testing.T) {
-	mockRepo, service := setupMockService()
+	mockRepo, service := setupMockRepository()
 	ctx := context.Background()
 
 	url := &models.URL{
@@ -126,7 +126,7 @@ func TestRedirectURL_Success(t *testing.T) {
 }
 
 func TestRedirectURL_EmptyShortCode(t *testing.T) {
-	mockRepo, service := setupMockService()
+	mockRepo, service := setupMockRepository()
 	ctx := context.Background()
 
 	mockRepo.On("Begin", ctx).Return(nil)
@@ -142,7 +142,7 @@ func TestRedirectURL_EmptyShortCode(t *testing.T) {
 }
 
 func TestRedirectURL_UpdateClickFail(t *testing.T) {
-	mockRepo, service := setupMockService()
+	mockRepo, service := setupMockRepository()
 	ctx := context.Background()
 
 	url := &models.URL{

@@ -23,9 +23,20 @@ func (m *MockURLService) ShortenURL(ctx context.Context, originalURL string) (st
 	return args.String(0), args.Error(1)
 }
 
-func TestShortenURL_Success(t *testing.T) {
+func (m *MockURLService) RedirectURL(ctx context.Context, shortCode string) (string, error) {
+	args := m.Called(ctx, shortCode)
+	return args.String(0), args.Error(1)
+}
+
+func setupMockService() (*MockURLService, *URLHandler) {
 	mockService := new(MockURLService)
 	handler := NewURLHandler(mockService)
+
+	return mockService, handler
+}
+
+func TestShortenURL_Success(t *testing.T) {
+	mockService, handler := setupMockService()
 
 	requestBody := `{"original_url":"http://test.test"}`
 
@@ -49,8 +60,7 @@ func TestShortenURL_Success(t *testing.T) {
 }
 
 func TestShortenURL_EmptyRequest(t *testing.T) {
-	mockService := new(MockURLService)
-	handler := NewURLHandler(mockService)
+	mockService, handler := setupMockService()
 
 	requestBody := `{"original_url": ""}`
 
@@ -66,4 +76,38 @@ func TestShortenURL_EmptyRequest(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, rec.Code)
 	assert.Contains(t, rec.Body.String(), "original url cannot be empty")
+}
+
+func TestRedirect_Success(t *testing.T) {
+	mockService, handler := setupMockService()
+
+	req := httptest.NewRequest(http.MethodGet, "/abc123", nil)
+	req.SetPathValue("shortcode", "abc123")
+	rec := httptest.NewRecorder()
+
+	mockService.On("RedirectURL", req.Context(), "abc123").Return("https://test.test", nil)
+
+	handler.Redirect(rec, req)
+
+	mockService.AssertExpectations(t)
+
+	assert.Equal(t, http.StatusMovedPermanently, rec.Code)
+	assert.Equal(t, "https://test.test", rec.Header().Get("Location"))
+}
+
+func TestRedirect_NotFound(t *testing.T) {
+	mockService, handler := setupMockService()
+
+	req := httptest.NewRequest(http.MethodGet, "/abc123", nil)
+	req.SetPathValue("shortcode", "abc123")
+	rec := httptest.NewRecorder()
+
+	mockService.On("RedirectURL", req.Context(), "abc123").Return("", errors.New("not found"))
+
+	handler.Redirect(rec, req)
+
+	mockService.AssertExpectations(t)
+
+	assert.Equal(t, http.StatusNotFound, rec.Code)
+	assert.Equal(t, "not found", strings.TrimSpace(rec.Body.String()))
 }
